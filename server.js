@@ -11,7 +11,6 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 app.use(cors());
 app.use(express.json());
 
-// Регистрация
 app.post('/register', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email обязателен' });
@@ -30,7 +29,6 @@ app.post('/register', async (req, res) => {
   res.json({ user: data });
 });
 
-// Вход
 app.post('/login', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email обязателен' });
@@ -46,7 +44,6 @@ app.post('/login', async (req, res) => {
   res.json({ user: data });
 });
 
-// Генерация
 app.post('/generate', async (req, res) => {
   const { company, offer, language, email } = req.body;
 
@@ -54,7 +51,6 @@ app.post('/generate', async (req, res) => {
     return res.status(400).json({ error: 'Заполни все поля' });
   }
 
-  // Проверяем пользователя
   const { data: user, error } = await supabase
     .from('users')
     .select()
@@ -64,7 +60,7 @@ app.post('/generate', async (req, res) => {
   if (error || !user) return res.status(404).json({ error: 'Пользователь не найден' });
 
   if (user.generations_left <= 0 && !user.is_paid) {
-    return res.status(403).json({ error: 'Лимит исчерпан. Купи подписку.' });
+    return res.status(403).json({ error: 'limit_exceeded' });
   }
 
   try {
@@ -76,7 +72,6 @@ app.post('/generate', async (req, res) => {
       }]
     });
 
-    // Уменьшаем счётчик если не платный
     if (!user.is_paid) {
       await supabase
         .from('users')
@@ -84,7 +79,7 @@ app.post('/generate', async (req, res) => {
         .eq('email', email);
     }
 
-    res.json({ 
+    res.json({
       email: response.choices[0].message.content,
       generations_left: user.is_paid ? 'unlimited' : user.generations_left - 1
     });
