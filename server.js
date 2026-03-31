@@ -60,7 +60,7 @@ app.post('/generate', async (req, res) => {
   if (error || !user) return res.status(404).json({ error: 'Пользователь не найден' });
 
   if (user.generations_left <= 0 && !user.is_paid) {
-    return res.status(403).json({ error: 'limit_exceeded' });
+    return res.status(403).json({ error: 'limit exceeded. buy a subscription.' });
   }
 
   try {
