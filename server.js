@@ -1,4 +1,7 @@
 require('dotenv').config();
+const { lemonSqueezySetup, createCheckout } = require('@lemonsqueezy/lemonsqueezy.js');
+
+lemonSqueezySetup({ apiKey: process.env.LEMONSQUEEZY_API_KEY });
 const express = require('express');
 const cors = require('cors');
 const Groq = require('groq-sdk');
@@ -87,5 +90,27 @@ app.post('/generate', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
+app.post('/checkout', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email обязателен' });
+  
+    try {
+      const checkout = await createCheckout(
+        process.env.LEMONSQUEEZY_STORE_ID,
+        process.env.LEMONSQUEEZY_VARIANT_ID,
+        {
+          checkoutData: {
+            email: email,
+            custom: { user_email: email }
+          }
+        }
+      );
+      res.json({ url: checkout.data.data.attributes.url });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Ошибка создания чекаута' });
+    }
+  });
 
 app.listen(3000, () => console.log('Сервер запущен на порту 3000'));

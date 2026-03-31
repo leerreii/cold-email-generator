@@ -20,12 +20,13 @@
     #auth-screen { display: block; }
     #main-screen { display: none; }
     .error { color: red; font-size: 14px; margin-bottom: 12px; }
+    #upgrade-btn { background: #f5a623; color: white; border: none; display: none; }
+    #upgrade-btn:hover { background: #e09515; }
   </style>
 </head>
 <body>
   <div class="container">
 
-    <!-- Экран входа -->
     <div id="auth-screen">
       <h1>Cold Email Generator</h1>
       <p style="margin-bottom:24px; color:#666;">Введи email чтобы начать</p>
@@ -35,7 +36,6 @@
       <button class="secondary" onclick="register()">Зарегистрироваться</button>
     </div>
 
-    <!-- Основной экран -->
     <div id="main-screen">
       <h1 id="title">Cold Email Generator</h1>
       <div id="generations"></div>
@@ -46,6 +46,7 @@
         <option value="en">English</option>
       </select>
       <button id="btn" onclick="generate()">Сгенерировать письмо</button>
+      <button id="upgrade-btn" onclick="upgrade()">⭐ Купить подписку — $9/мес</button>
       <button class="secondary" onclick="logout()">Выйти</button>
       <div id="loading"></div>
       <div id="result"></div>
@@ -64,7 +65,9 @@
         button: 'Сгенерировать письмо',
         loading: 'Генерируем...',
         error: 'Заполни все поля',
-        serverError: 'Ошибка соединения с сервером'
+        serverError: 'Ошибка соединения с сервером',
+        limit: 'Лимит исчерпан. Купи подписку.',
+        upgrade: '⭐ Купить подписку — $9/мес'
       },
       en: {
         title: 'Cold Email Generator',
@@ -73,13 +76,14 @@
         button: 'Generate email',
         loading: 'Generating...',
         error: 'Fill in all fields',
-        serverError: 'Server connection error'
+        serverError: 'Server connection error',
+        limit: 'Limit reached. Buy a subscription.',
+        upgrade: '⭐ Buy subscription — $9/mo'
       }
     };
 
     let currentUser = null;
 
-    // Проверяем сохранённого пользователя
     window.onload = () => {
       const saved = localStorage.getItem('user');
       if (saved) {
@@ -98,8 +102,12 @@
       const el = document.getElementById('generations');
       if (currentUser.is_paid) {
         el.textContent = '✓ Безлимитный доступ';
+        document.getElementById('upgrade-btn').style.display = 'none';
       } else {
         el.textContent = `Осталось генераций: ${currentUser.generations_left}`;
+        if (currentUser.generations_left <= 0) {
+          document.getElementById('upgrade-btn').style.display = 'block';
+        }
       }
     }
 
@@ -159,6 +167,25 @@
       document.getElementById('company').placeholder = t.company;
       document.getElementById('offer').placeholder = t.offer;
       document.getElementById('btn').textContent = t.button;
+      document.getElementById('upgrade-btn').textContent = t.upgrade;
+    }
+
+    async function upgrade() {
+      const language = document.getElementById('language').value;
+      const t = translations[language];
+
+      const res = await fetch(`${API}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, '_blank');
+      } else {
+        alert(t.serverError);
+      }
     }
 
     async function generate() {
@@ -187,11 +214,13 @@
 
         if (data.error) {
           document.getElementById('result').style.display = 'block';
-          document.getElementById('result').textContent = data.error;
+          document.getElementById('result').textContent = data.error === 'limit exceeded. buy a subscription.'
+            ? t.limit
+            : data.error;
+          document.getElementById('upgrade-btn').style.display = 'block';
           return;
         }
 
-        // Обновляем счётчик
         if (data.generations_left !== 'unlimited') {
           currentUser.generations_left = data.generations_left;
           localStorage.setItem('user', JSON.stringify(currentUser));
