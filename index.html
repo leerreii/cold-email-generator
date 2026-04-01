@@ -47,7 +47,7 @@
       </select>
       <button id="btn" onclick="generate()">Сгенерировать письмо</button>
       <button id="upgrade-btn" onclick="upgrade()">⭐ Купить подписку — $9/мес</button>
-      <button class="secondary" onclick="logout()">Выйти</button>
+      <button id="logout-btn" class="secondary" onclick="logout()">Выйти</button>
       <div id="loading"></div>
       <div id="result"></div>
     </div>
@@ -168,6 +168,7 @@
       document.getElementById('offer').placeholder = t.offer;
       document.getElementById('btn').textContent = t.button;
       document.getElementById('upgrade-btn').textContent = t.upgrade;
+      document.getElementById('logout-btn').textContent = lang === 'ru' ? 'Выйти' : 'Logout';
     }
 
     async function upgrade() {
